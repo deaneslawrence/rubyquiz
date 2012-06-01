@@ -1,19 +1,67 @@
 #!/usr/bin/env ruby
-# Deck Class represents a deck of cards
+
+class SolitareEncryptor
+  # SolitareEncryptor class implements the Solitaire encryption scheme
+  # outined Neal Stephenson's "Cyryptonomicon".
+
+  ASCII_BASE = 64
+  
+  def initialize (message, encryptOrDecrypt = "e")
+    # convert message to uppercase and strip all non A-Z chars
+    @message  = (message.upcase.split(%r{s*}).keep_if{|v| v =~ /[A-Z]/}).join
+    @d = Deck.new(2)
+    if encryptOrDecrypt.downcase.start_with?("e") then
+      @enOrDe = 1
+    else
+      @enOrDe = -1
+    end
+  end
+  
+  def crypt
+    @outMessage = ""
+    @message.each_byte do |a|
+      @d.key
+      outCard = (ASCII_BASE + ((a - ASCII_BASE + 
+        (@enOrDe * (nextCard - ASCII_BASE))) % 26)).chr
+      # shift for Z
+      outCard = "Z" if outCard == "@"
+      @outMessage << outCard
+    end
+    return @outMessage
+  end
+    
+  def nextCard
+    # skip jokers
+    if @d.deck[[@d.deck[0], 53].min] < 53 then
+      card = (64 + (@d.deck[[@d.deck[0], 53].min] % 26))
+      return card
+    else
+      # if joker rekey and try again
+      @d.key
+      nextCard
+    end
+  end
+    
+end
+
+
 class Deck
+  # Deck Class represents a deck of cards
   
   CARDS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
   SUITS = ['C', 'D', 'H', 'S']
+  
+  attr_reader :deck
   
   def initialize (jokercount, ace = 'Low')
     deckSize = 52 + [2, jokercount].min
     @deck = (1..deckSize).to_a
   end
   
-  # because its easier to work with a range of (1..52) + Jokers, 
-  # that to work with card names (ie. 'Jack of Spades' or 'JS')
-  # use translate for visual interfacing only
   def translate
+    # because its easier to work with a range of (1..52) + Jokers, 
+    # that to work with card names (ie. 'Jack of Spades' or 'JS')
+    # use translate for visual interfacing only
     @tDeck = (0..@deck.count - 1).to_a
     for c in (0..@deck.count - 1) do
       if @deck[c] == "A" 
@@ -24,16 +72,15 @@ class Deck
         else
           suit = SUITS[((@deck[c] - 1) / 13)]
           card = CARDS[((@deck[c] - 1) % 13)]
-          #p(suit)
-          #p(card)
           @tDeck[c] = suit + card
         end
       end
     end
   end
   
-  #very simple shuffle, a better shuffle is required for sensitive applications
   def shuffle
+    # very simple shuffle, a better shuffle is required for sensitive  
+    # applications
     @deck = @deck.sort_by{ rand }
   end
   
@@ -42,9 +89,9 @@ class Deck
     p( @tDeck )
   end
   
-  #1st card in deck is card 1, last card is card 54 (w/ 2 jokers)
-  # count backward, if method returns -1 card is not in deck
   def findCard (card)
+    # 1st card in deck is card 1, last card is card 54 (w/ 2 jokers)
+    # count backward, if method returns -1 card is not in deck
     d = @deck.count - 1
     while (card != @deck[d] and d >= 0)
       d = d - 1
@@ -57,7 +104,6 @@ class Deck
             @deck.first(count)
   end
             
-  
   # order of cardOne and cardTwo are interchangeable
   def tripleCut (cardOne, cardTwo)
     cardOnePos = findCard (cardOne)
@@ -123,46 +169,22 @@ class Deck
     moveCard(lastCard, lastCard)
     
   end
-  
-  def outputLetter
-    # skip jokers
-    if @deck[[@deck[0], 53].min] <= 52 then
-      card = (64 + (@deck[[@deck[0], 53].min] % 26)).chr
-    else
-      card = nil
-    end
-  end
-    
-
-    # Find the output letter. Convert the top card to it's value and count 
-    # down that many cards from the top of the deck, with the top card itself 
-    # being card number one. Look at the card immediately after your count and 
-    # convert it to a letter. This is the next letter in the keystream. If the 
-    # output card is a joker, no letter is generated this sequence. This step 
-    # does not alter the deck. For our example, the output letter is:
-
-    # D (the 2 tells us to count down to the 4, which is a D)
-
-    # Return to step 2, if more letters are needed.
-
-    # For the sake of testing, the first ten output letters for an unkeyed 
-    # deck are:
-
-    # D (4) W (49) J (10) Skip Joker (53) X (24) H (8)
-    # Y (51) R (44) F (6) D (4) G (33)
-    
-  
-  
 end
 
-d = Deck.new(2)
 
-for b in (1..10) do
-  d.key
-  #d.reveal
-  p(d.outputLetter)
+
+
+
+# Get the message and whether to encrypt or decrypt 
+message = ARGV[0]
+encDirection = ARGV[1]
+
+if message == nil then
+  puts "You must specify a message to encrypt or decrypt"
+else
+  @encryptor = SolitaireEncryptor.new(message, encDirection)
+  puts("Resulting message...")
+  puts(@encryptor.crypt)
 end
 
-# d.shuffle
-# d.translate
-d.reveal
+
